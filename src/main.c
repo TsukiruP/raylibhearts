@@ -1,54 +1,219 @@
-/*
-Raylib example file.
-This is an example main file for a simple raylib project.
-Use this as a starting point or replace it with your code.
+/* Core, Shapes, Textures, Text, Audio */
 
-by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
+#include <string.h>
+#include "raylib.h" 
+#include "raymath.h"
+#include "resource_dir.h"
 
-*/
+#define ACTION_HEIGHT 16
+#define ACTION_MARGIN 12
+#define ACTION_BOTTOM 234
+#define ACTION_COMMANDS 4
 
-#include "raylib.h"
+#define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
 
-#include "resource_dir.h"	// utility header for SearchAndSetResourceDir
+Texture2D texCommandMenu1;
+Texture2D texCommandMenu2;
+Texture2D texCommandMenu3;
+Texture2D texMagicMenu;
 
-int main ()
+Font font1;
+
+typedef struct Action
 {
-	// Tell the window to use vsync and work on high DPI displays
-	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+    char name[16];
+    int type;
+} Action;
 
-	// Create the window and OpenGL context
-	InitWindow(1280, 800, "Hello Raylib");
+typedef struct ActionMenu
+{
+    int active;
+    Action *ptr;
+    int actionCount;
+    bool submenu;
+    
+} ActionMenu;
 
-	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
-	SearchAndSetResourceDir("resources");
+enum COMMANDS
+{
+    ATTACK,
+    MAGIC,
+    ITEMS,
+    LIMIT,
+};
 
-	// Load a texture from the resources directory
-	Texture wabbit = LoadTexture("wabbit_alpha.png");
-	
-	// game loop
-	while (!WindowShouldClose())		// run the loop untill the user presses ESCAPE or presses the Close button on the window
-	{
-		// drawing
-		BeginDrawing();
+Action actAttack;
+Action actMagic;
+Action actItems;
+Action actLimit;
+Action arrCommands[LIMIT + 1];
+ActionMenu mnuCommand;
 
-		// Setup the back buffer for drawing (clear color and depth buffers)
-		ClearBackground(BLACK);
+enum MAGIC
+{
+    FIRE,
+    BLIZZARD,
+    THUNDER,
+    CURE,
+    GRAVITY,
+    STOP,
+    AERO,
+};
 
-		// draw some text using the default font
-		DrawText("Hello Raylib", 200,200,20,WHITE);
+Action actFire;
+Action actBlizzard;
+Action actThunder;
+Action actCure;
+Action actGravity;
+Action actStop;
+Action actAero;
+Action arrMagic[AERO + 1];
+ActionMenu mnuMagic;
 
-		// draw our texture to the screen
-		DrawTexture(wabbit, 400, 200, WHITE);
-		
-		// end the frame and get ready for the next one  (display frame, poll input, etc...)
-		EndDrawing();
-	}
+Action InitCommand();
+void InitActions();
 
-	// cleanup
-	// unload our texture so it can be cleaned up
-	UnloadTexture(wabbit);
 
-	// destroy the window and cleanup the OpenGL context
-	CloseWindow();
-	return 0;
+void DrawCommandMenu(Texture2D tex);
+void DrawMagicMenu();
+
+int main(void)
+{
+    // Window initialization:
+    const int screenWidth = 420;
+    const int screenHeight = 240;
+    
+    InitWindow(screenWidth, screenHeight, "Command Menu");
+    SearchAndSetResourceDir("resources");
+    
+    // Image initialization:
+    Image imCommandMenu1 = LoadImage("command/CommandMenu1.png");
+    Image imCommandMenu2 = LoadImage("command/CommandMenu2.png");
+    Image imCommandMenu3 = LoadImage("command/CommandMenu3.png");
+    Image imMagicMenu = LoadImage("command/MagicMenu.png");
+    
+    // Texture initialization:
+    texCommandMenu1 = LoadTextureFromImage(imCommandMenu1);
+    texCommandMenu2 = LoadTextureFromImage(imCommandMenu2);
+    texCommandMenu3 = LoadTextureFromImage(imCommandMenu3);
+    texMagicMenu = LoadTextureFromImage(imMagicMenu);
+    
+    // Font initialization:
+    font1 = LoadFont("font/Font1.png");
+    
+    // Command menu:
+    InitActions();
+    
+    // Target FPS:
+    SetTargetFPS(60);
+    
+    // Game loop:
+    while (!WindowShouldClose())
+    {
+            if (IsKeyPressed(KEY_DOWN))
+            {
+                mnuCommand.active += 1;
+            }
+            
+            if (IsKeyPressed(KEY_UP))
+            {
+                mnuCommand.active -= 1;
+            }
+            
+            mnuCommand.active = Wrap(mnuCommand.active, 0, 4);
+            
+            // Draw:
+            BeginDrawing();
+                ClearBackground(VIOLET);
+                
+                DrawCommandMenu(texCommandMenu1);
+                DrawMagicMenu();
+            EndDrawing();
+    }
+    
+    CloseWindow();
+    
+    return 0;
+}
+
+Action InitCommand(Action *arr, int id, char name[])
+{
+    Action temp;
+    
+    strcpy(temp.name, name);
+    arr[id] = temp;
+    
+    return temp;
+}
+
+ActionMenu InitActionMenu(Action arr[], int actionCount, bool submenu)
+{
+    ActionMenu temp;
+    
+    temp.active = 0;
+    temp.ptr = arr;
+    temp.actionCount = actionCount;
+    temp.submenu = submenu;
+    
+    return temp;
+}
+
+void InitActions()
+{
+    // Commands:
+    actAttack = InitCommand(arrCommands, ATTACK, "Attack");
+    actMagic = InitCommand(arrCommands, MAGIC, "Magic");
+    actItems = InitCommand(arrCommands, ITEMS, "Items");
+    actLimit = InitCommand(arrCommands, LIMIT, "Limits");
+    mnuCommand = InitActionMenu(arrCommands, LIMIT + 1, false);
+    
+    // Magic:
+    actFire = InitCommand(arrMagic, FIRE, "Fire");
+    actBlizzard = InitCommand(arrMagic, BLIZZARD, "Blizzard");
+    actThunder = InitCommand(arrMagic, THUNDER, "-");
+    actCure = InitCommand(arrMagic, CURE, "-");
+    actGravity = InitCommand(arrMagic, GRAVITY, "-");
+    actStop = InitCommand(arrMagic, STOP, "-");
+    actAero = InitCommand(arrMagic, AERO, "-");
+    mnuMagic = InitActionMenu(arrMagic, AERO + 1, true);
+}
+
+void DrawActionMenu(Texture2D tex, ActionMenu menu)
+{
+    int i;
+    Action *arr = menu.ptr;
+    int actionCount = menu.actionCount;
+    int active = menu.active;
+    int indent = (menu.submenu == true) ? 10 : 0;
+    
+    Vector2 posAction = { ACTION_MARGIN + indent, ACTION_BOTTOM - (actionCount * ACTION_HEIGHT) };
+    
+    // Header:
+    DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, ACTION_HEIGHT }, (Vector2){ posAction.x, posAction.y - ACTION_HEIGHT }, WHITE);
+    
+    // Actions:
+    for (i = 0; i < actionCount; i++)
+    {
+        int source_y, active_x;
+        
+        source_y = (active == i) ? 1 : ((i == actionCount - 1) ? 3 : 2);
+        active_x = (active == i) ? 6 : 0;
+        
+        DrawTextureRec(tex, (Rectangle){ 0, ACTION_HEIGHT * source_y, tex.width, ACTION_HEIGHT }, (Vector2){ posAction.x + active_x, posAction.y }, WHITE);
+        
+        // Action name:
+        FONT_1(arr[i].name, posAction.x + 10 + active_x, posAction.y + 4, WHITE);
+        
+        posAction.y += ACTION_HEIGHT;
+    }
+}
+
+void DrawCommandMenu(Texture2D tex)
+{
+    DrawActionMenu(tex, mnuCommand);
+}
+
+void DrawMagicMenu()
+{
+    DrawActionMenu(texMagicMenu, mnuMagic);
 }
