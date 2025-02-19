@@ -16,6 +16,11 @@ Texture2D texCommandBase1;
 Texture2D texCommandBase2;
 Texture2D texCommandBase3;
 Texture2D texCommandMagic;
+Texture2D texGaugeHP;
+Texture2D texBarHP;
+Texture2D texGaugeMP;
+Texture2D texBarMP;
+Texture2D texGaugeSora;
 
 Font font1;
 
@@ -66,106 +71,7 @@ CommandMenu SetCommandMenu(int count, Command mnu[]);
 void InitCommands();
 char *GetCommandName(Command *cmd);
 void DrawCommandMenu(CommandMenu *mnu);
-
-/*
-enum
-{
-    ATTACK,
-    MAGIC,
-    ITEMS,
-    LIMIT,
-};
-
-typedef struct Command
-{
-    int type;
-    int index;
-} Command;
-
-typedef struct Base
-{
-    char name[NAME_MAX];
-} Base;
-
-typedef struct CommandMenu
-{
-    Command *arr;
-    int commandCount;
-    int cursor;
-    bool submenu;
-} CommandMenu;
-
-Base commandBase[4];
-Command optionBase[4];
-CommandMenu menuBase;
-CommandMenu menuMagic;
-
-Command SetCommand(int type, int index);
-void SetCommandBase(int index, char name[]);
-void InitCommandBase();
-CommandMenu InitCommandMenu(Command arr[], int commandCount, bool submenu);
-void InitMenuBase();
-void DrawCommand();
-void DrawCommandMenu();
-
-typedef struct Action
-{
-    char name[16];
-    int type;
-} Action;
-
-typedef struct ActionMenu
-{
-    int active;
-    Action *ptr;
-    int actionCount;
-    bool submenu;
-
-} ActionMenu;
-
-enum COMMANDS
-{
-    ATTACK,
-    MAGIC,
-    ITEMS,
-    LIMIT,
-};
-
-Action actAttack;
-Action actMagic;
-Action actItems;
-Action actLimit;
-Action arrCommands[LIMIT + 1];
-ActionMenu mnuCommand;
-
-enum MAGIC
-{
-    FIRE,
-    BLIZZARD,
-    THUNDER,
-    CURE,
-    GRAVITY,
-    STOP,
-    AERO,
-};
-
-Action actFire;
-Action actBlizzard;
-Action actThunder;
-Action actCure;
-Action actGravity;
-Action actStop;
-Action actAero;
-Action arrMagic[AERO + 1];
-ActionMenu mnuMagic;
-
-Action InitCommand();
-void InitActions();
-
-
-void DrawCommandMenu(Texture2D tex);
-void DrawMagicMenu();
-*/
+void DrawGaugePlayer(void);
 
 int main(void)
 {
@@ -181,19 +87,27 @@ int main(void)
     Image imCommandBase2 = LoadImage("command/CommandBase2.png");
     Image imCommandBase3 = LoadImage("command/CommandBase3.png");
     Image imCommandMagic = LoadImage("command/CommandMagic.png");
+    Image imGaugeHP = LoadImage("gauge/GaugeHP.png");
+    Image imBarHP = LoadImage("gauge/BarHP.png");
+    Image imGaugeMP = LoadImage("gauge/GaugeMP.png");
+    Image imBarMP = LoadImage("gauge/BarMP.png");
+    Image imGaugeSora = LoadImage("gauge/GaugeSora.png");
     
     // Texture initialization:
     texCommandBase1 = LoadTextureFromImage(imCommandBase1);
     texCommandBase2 = LoadTextureFromImage(imCommandBase2);
     texCommandBase3 = LoadTextureFromImage(imCommandBase3);
     texCommandMagic = LoadTextureFromImage(imCommandMagic);
+    texGaugeHP = LoadTextureFromImage(imGaugeHP);
+    texBarHP = LoadTextureFromImage(imBarHP);
+    texGaugeMP = LoadTextureFromImage(imGaugeMP);
+    texBarMP = LoadTextureFromImage(imBarMP);
+    texGaugeSora = LoadTextureFromImage(imGaugeSora);
     
     // Font initialization:
     font1 = LoadFont("font/Font1.png");
     
     // Command initialization:
-    //InitCommandBase();
-    //InitMenuBase();
     InitCommands();
     
     // Target FPS:
@@ -220,6 +134,7 @@ int main(void)
             BeginDrawing();
                 ClearBackground(VIOLET);
                 DrawCommandMenu(&menuBase);
+                DrawGaugePlayer();
             EndDrawing();
     }
     
@@ -291,6 +206,7 @@ void DrawCommandMenu(CommandMenu *mnu)
     int cursor = mnu->cursor;
     int count = mnu->count;
     int indent = 0;
+
     Command *arr = mnu->arr;
     Vector2 position = { COMMAND_MARGIN + indent, COMMAND_BOTTOM};
     Texture2D tex = texCommandBase1;
@@ -312,158 +228,16 @@ void DrawCommandMenu(CommandMenu *mnu)
     DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ position.x, position.y }, WHITE);
 }
 
-/*
-Command SetCommand(int type, int index)
+void DrawGaugePlayer(void)
 {
-    Command commandTemp;
+    const Vector2 position = { 420 - COMMAND_MARGIN, COMMAND_BOTTOM };
+    const int healthWidth = 62;
+    const int healthHeight = 5;
+    const int magicWidth = 75;
 
-    commandTemp.type = type;
-    commandTemp.index = index;
-
-    return commandTemp;
+    DrawTexture(texGaugeHP, position.x - texGaugeHP.width, position.y, WHITE);
+    DrawTexturePro(texBarHP, (Rectangle){ 0, 0, 1, texBarHP.height }, (Rectangle){ position.x - 15, position.y + 1, healthWidth, healthHeight }, (Vector2){ healthWidth, 0 }, 0, WHITE);
+    DrawTexture(texGaugeSora, position.x - texGaugeSora.width - 2, position.y - texGaugeSora.height, WHITE);
+    DrawTexture(texGaugeMP, position.x - texGaugeMP.width - 47, position.y - texGaugeMP.height - 1, WHITE);
+    DrawTexturePro(texBarMP, (Rectangle){ 0, 0, 1, texBarMP.height }, (Rectangle){ position.x - 63, position.y - texGaugeHP.height, magicWidth, healthHeight }, (Vector2){ magicWidth, 0 }, 0, WHITE);
 }
-
-void SetCommandBase(int index, char name[])
-{
-    strcpy(commandBase[index].name, name);
-}
-
-void InitCommandBase()
-{
-    SetCommandBase(ATTACK, "Attack");
-    SetCommandBase(MAGIC, "Magic");
-    SetCommandBase(ITEMS, "Items");
-    SetCommandBase(LIMIT, "Limit");
-}
-
-CommandMenu InitCommandMenu(Command arr[], int commandCount, bool submenu)
-{
-    CommandMenu menuTemp;
-
-    menuTemp.arr = arr;
-    menuTemp.commandCount = commandCount;
-    menuTemp.cursor = 0;
-    menuTemp.submenu = submenu;
-
-    return menuTemp;
-}
-
-void InitMenuBase()
-{
-    optionBase[0] = SetCommand(0, ATTACK);
-    optionBase[1] = SetCommand(0, MAGIC);
-    optionBase[2] = SetCommand(0, ITEMS);
-    optionBase[3] = SetCommand(0, LIMIT);
-    menuBase = InitCommandMenu(optionBase, LIMIT + 1, false);
-}
-
-void DrawCommand(Command command, Vector2 position)
-{
-    char nameTemp[NAME_MAX] = "FAKE";
-    int typeTemp = command.type;
-    int indexTemp = command.index;
-
-    switch (typeTemp)
-    {
-        default:
-            strcpy(nameTemp, commandBase[indexTemp].name);
-    }
-
-    FONT_1(TextFormat("%d", indexTemp), position.x, position.y, WHITE);
-}
-
-void DrawCommandMenu(CommandMenu menu)
-{
-    int i;
-    Command *arr = menu.arr;
-    int commandCount = menu.commandCount;
-    int cursor = menu.cursor;
-    Vector2 commandPosition = { COMMAND_MARGIN, COMMAND_BOTTOM - (commandCount * COMMAND_HEIGHT) };
-
-    // Header:
-
-
-}
-
-Action InitCommand(Action *arr, int id, char name[])
-{
-    Action temp;
-    
-    strcpy(temp.name, name);
-    arr[id] = temp;
-    
-    return temp;
-}
-
-ActionMenu InitActionMenu(Action arr[], int actionCount, bool submenu)
-{
-    ActionMenu temp;
-    
-    temp.active = 0;
-    temp.ptr = arr;
-    temp.actionCount = actionCount;
-    temp.submenu = submenu;
-    
-    return temp;
-}
-
-void InitActions()
-{
-    // Commands:
-    actAttack = InitCommand(arrCommands, ATTACK, "Attack");
-    actMagic = InitCommand(arrCommands, MAGIC, "Magic");
-    actItems = InitCommand(arrCommands, ITEMS, "Items");
-    actLimit = InitCommand(arrCommands, LIMIT, "Limits");
-    mnuCommand = InitActionMenu(arrCommands, LIMIT + 1, false);
-    
-    // Magic:
-    actFire = InitCommand(arrMagic, FIRE, "Fire");
-    actBlizzard = InitCommand(arrMagic, BLIZZARD, "Blizzard");
-    actThunder = InitCommand(arrMagic, THUNDER, "-");
-    actCure = InitCommand(arrMagic, CURE, "-");
-    actGravity = InitCommand(arrMagic, GRAVITY, "-");
-    actStop = InitCommand(arrMagic, STOP, "-");
-    actAero = InitCommand(arrMagic, AERO, "-");
-    mnuMagic = InitActionMenu(arrMagic, AERO + 1, true);
-}
-
-void DrawActionMenu(Texture2D tex, ActionMenu menu)
-{
-    int i;
-    Action *arr = menu.ptr;
-    int actionCount = menu.actionCount;
-    int active = menu.active;
-    int indent = (menu.submenu == true) ? 10 : 0;
-    
-    Vector2 posAction = { COMMAND_MARGIN + indent, COMMAND_BOTTOM - (actionCount * COMMAND_HEIGHT) };
-    
-    // Header:
-    DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ posAction.x, posAction.y - COMMAND_HEIGHT }, WHITE);
-    
-    // Actions:
-    for (i = 0; i < actionCount; i++)
-    {
-        int source_y, active_x;
-        
-        source_y = (active == i) ? 1 : ((i == actionCount - 1) ? 3 : 2);
-        active_x = (active == i) ? 6 : 0;
-        
-        DrawTextureRec(tex, (Rectangle){ 0, COMMAND_HEIGHT * source_y, tex.width, COMMAND_HEIGHT }, (Vector2){ posAction.x + active_x, posAction.y }, WHITE);
-        
-        // Action name:
-        FONT_1(arr[i].name, posAction.x + 10 + active_x, posAction.y + 4, WHITE);
-        
-        posAction.y += COMMAND_HEIGHT;
-    }
-}
-
-void DrawCommandMenu(Texture2D tex)
-{
-    DrawActionMenu(tex, mnuCommand);
-}
-
-void DrawMagicMenu()
-{
-    DrawActionMenu(texMagicMenu, mnuMagic);
-}
-*/
