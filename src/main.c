@@ -16,6 +16,7 @@ Texture2D texCommandBase1;
 Texture2D texCommandBase2;
 Texture2D texCommandBase3;
 Texture2D texCommandMagic;
+Texture2D texCommandIcon;
 Texture2D texGaugeHP;
 Texture2D texBarHP;
 Texture2D texGaugeMP;
@@ -46,8 +47,8 @@ typedef struct Command
         struct Magic
         {
             int level;
-            char name_ra[NAME_MAX];
-            char name_ga[NAME_MAX];
+            char namera[NAME_MAX];
+            char namega[NAME_MAX];
         } Magic;
     };
 
@@ -87,6 +88,7 @@ int main(void)
     Image imCommandBase2 = LoadImage("command/CommandBase2.png");
     Image imCommandBase3 = LoadImage("command/CommandBase3.png");
     Image imCommandMagic = LoadImage("command/CommandMagic.png");
+    Image imCommandIcon = LoadImage("command/CommandIcon.png");
     Image imGaugeHP = LoadImage("gauge/GaugeHP.png");
     Image imBarHP = LoadImage("gauge/BarHP.png");
     Image imGaugeMP = LoadImage("gauge/GaugeMP.png");
@@ -98,6 +100,7 @@ int main(void)
     texCommandBase2 = LoadTextureFromImage(imCommandBase2);
     texCommandBase3 = LoadTextureFromImage(imCommandBase3);
     texCommandMagic = LoadTextureFromImage(imCommandMagic);
+    texCommandIcon = LoadTextureFromImage(imCommandIcon);
     texGaugeHP = LoadTextureFromImage(imGaugeHP);
     texBarHP = LoadTextureFromImage(imBarHP);
     texGaugeMP = LoadTextureFromImage(imGaugeMP);
@@ -116,19 +119,17 @@ int main(void)
     // Game loop:
     while (!WindowShouldClose())
     {
-            /*
             if (IsKeyPressed(KEY_DOWN))
             {
-                mnuCommand.active += 1;
+                menuBase.cursor += 1;
             }
 
             if (IsKeyPressed(KEY_UP))
             {
-                mnuCommand.active -= 1;
+                menuBase.cursor -= 1;
             }
 
-            mnuCommand.active = Wrap(mnuCommand.active, 0, 4);
-            */
+            menuBase.cursor = Wrap(menuBase.cursor, 0, 4);
 
             // Draw:
             BeginDrawing();
@@ -139,7 +140,6 @@ int main(void)
     }
     
     CloseWindow();
-    
     return 0;
 }
 
@@ -149,20 +149,18 @@ Command SetCommandBase(char name[])
 
     commandTemp.type = BASE;
     strcpy(commandTemp.name, name);
-
     return commandTemp;
 }
 
-Command SetCommandMagic(char name[], char name_ra[], char name_ga[])
+Command SetCommandMagic(char name[], char namera[], char namega[])
 {
     Command commandTemp;
 
     commandTemp.type = MAGIC;
     commandTemp.Magic.level = 0;
     strcpy(commandTemp.name, name);
-    strcpy(commandTemp.Magic.name_ra, name_ra);
-    strcpy(commandTemp.Magic.name_ga, name_ga);
-
+    strcpy(commandTemp.Magic.namera, namera);
+    strcpy(commandTemp.Magic.namega, namega);
     return commandTemp;
 }
 
@@ -173,7 +171,6 @@ CommandMenu SetCommandMenu(int count, Command mnu[])
     menuTemp.cursor = 0;
     menuTemp.count = count;
     menuTemp.arr = mnu;
-
     return menuTemp;
 }
 
@@ -208,7 +205,7 @@ void DrawCommandMenu(CommandMenu *mnu)
     int indent = 0;
 
     Command *arr = mnu->arr;
-    Vector2 position = { COMMAND_MARGIN + indent, COMMAND_BOTTOM};
+    Vector2 commandPosition = { COMMAND_MARGIN + indent, COMMAND_BOTTOM};
     Texture2D tex = texCommandBase1;
 
     // Commands:
@@ -216,16 +213,22 @@ void DrawCommandMenu(CommandMenu *mnu)
     {
         if (arr[i].type == MAGIC && arr[i].Magic.level == 0) continue;
 
-        int texture_y = (cursor == i) ? 1 : ((i == count - 1) ? 3 : 2);
-        int cursor_x = (cursor == i) ? 6 : 0;
+        int commandSource = (cursor == i) ? 1 : ((i == count - 1) ? 3 : 2);
+        int cursorOffset = (cursor == i) ? 6 : 0;
 
-        DrawTextureRec(tex, (Rectangle){ 0, COMMAND_HEIGHT * texture_y, tex.width, COMMAND_HEIGHT }, (Vector2){ position.x + cursor_x, position.y }, WHITE);
-        FONT_1(GetCommandName(&arr[i]), position.x + 10 + cursor_x, position.y + 4, WHITE);
-        position.y -= COMMAND_HEIGHT;
+        DrawTextureRec(tex, (Rectangle){ 0, COMMAND_HEIGHT * commandSource, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x + cursorOffset, commandPosition.y }, WHITE);
+        FONT_1(GetCommandName(&arr[i]), commandPosition.x + 10 + cursorOffset, commandPosition.y + 4, WHITE);
+        commandPosition.y -= COMMAND_HEIGHT;
     }
 
     // Header:
-    DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ position.x, position.y }, WHITE);
+    DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x, commandPosition.y }, WHITE);
+
+    // Icon:
+    Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu = &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
+    int iconSource = 14 * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
+
+    DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, 14, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
 }
 
 void DrawGaugePlayer(void)
