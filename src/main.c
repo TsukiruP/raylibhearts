@@ -1,5 +1,6 @@
 /* Core, Shapes, Textures, Text, Audio */
 
+#include <stdlib.h>
 #include <string.h>
 #include "raylib.h" 
 #include "raymath.h"
@@ -9,7 +10,10 @@
 #define COMMAND_MARGIN 12
 #define COMMAND_BOTTOM 218
 #define COMMAND_INDENT 10
+#define ICON_WIDTH 14
 #define NAME_MAX 16
+#define BASIC_MAX 4
+#define MAGIC_MAX 7
 
 #define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
 
@@ -48,6 +52,7 @@ typedef struct Command
         struct Magic
         {
             int level;
+            int cost;
             char namera[NAME_MAX];
             char namega[NAME_MAX];
         } Magic;
@@ -62,15 +67,15 @@ typedef struct CommandMenu
     Command *arr;
 } CommandMenu;
 
-Command commandBase[4];
+Command commandBase[BASIC_MAX];
+Command commandMagic[MAGIC_MAX];
 CommandMenu menuBase;
-
-Command commandMagic[7];
 CommandMenu menuMagic;
 
 Command SetCommandBase(char name[]);
 CommandMenu SetCommandMenu(int count, Command mnu[]);
 void InitCommands();
+void InitMenuMagic();
 char *GetCommandName(Command *cmd);
 void DrawCommandMenu(CommandMenu *mnu, int indent);
 void DrawGaugePlayer(void);
@@ -113,6 +118,7 @@ int main(void)
     
     // Command initialization:
     InitCommands();
+    InitMenuMagic();
     CommandMenu *menuSub = &menuMagic;
     
     // Target FPS:
@@ -121,15 +127,8 @@ int main(void)
     // Game loop:
     while (!WindowShouldClose())
     {
-            if (IsKeyPressed(KEY_DOWN))
-            {
-                menuBase.cursor += 1;
-            }
-
-            if (IsKeyPressed(KEY_UP))
-            {
-                menuBase.cursor -= 1;
-            }
+            if (IsKeyPressed(KEY_DOWN)) menuBase.cursor += 1;
+            if (IsKeyPressed(KEY_UP)) menuBase.cursor -= 1;
 
             menuBase.cursor = Wrap(menuBase.cursor, 0, 4);
 
@@ -155,12 +154,13 @@ Command SetCommandBase(char name[])
     return commandTemp;
 }
 
-Command SetCommandMagic(char name[], char namera[], char namega[])
+Command SetCommandMagic(char name[], char namera[], char namega[], int cost)
 {
     Command commandTemp;
 
     commandTemp.type = MAGIC;
-    commandTemp.Magic.level = 3;
+    commandTemp.Magic.level = 0;
+    commandTemp.Magic.cost = cost;
     strcpy(commandTemp.name, name);
     strcpy(commandTemp.Magic.namera, namera);
     strcpy(commandTemp.Magic.namega, namega);
@@ -183,16 +183,34 @@ void InitCommands()
     commandBase[1] = SetCommandBase("Magic");
     commandBase[2] = SetCommandBase("Items");
     commandBase[3] = SetCommandBase("Limit");
-    menuBase = SetCommandMenu(4, commandBase);
+    menuBase = SetCommandMenu(BASIC_MAX, commandBase);
 
-    commandMagic[0] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[1] = SetCommandMagic("Blizzard", "Blizzara", "Blizzaga");
-    commandMagic[2] = SetCommandMagic("Thunder", "Thundara", "Thundaga");
-    commandMagic[3] = SetCommandMagic("Cure", "Cura", "Curaga");
-    commandMagic[4] = SetCommandMagic("Aero", "Aerora", "Aeroga");
-    commandMagic[5] = SetCommandMagic("Gravity", "Gravira", "Graviga");
-    commandMagic[6] = SetCommandMagic("Stop", "Stopra", "Stopga");
-    menuMagic = SetCommandMenu(7, commandMagic);
+    commandMagic[0] = SetCommandMagic("Fire", "Fira", "Firaga", 12);
+    commandMagic[1] = SetCommandMagic("Blizzard", "Blizzara", "Blizzaga", 15);
+    commandMagic[2] = SetCommandMagic("Thunder", "Thundara", "Thundaga", 18);
+    commandMagic[3] = SetCommandMagic("Cure", "Cura", "Curaga", -1);
+    commandMagic[4] = SetCommandMagic("Aero", "Aerora", "Aeroga", 13);
+    commandMagic[5] = SetCommandMagic("Gravity", "Gravira", "Graviga", 15);
+    commandMagic[6] = SetCommandMagic("Stop", "Stopra", "Stopga", 20);
+    commandMagic[1].Magic.level = 1;
+    menuMagic = SetCommandMenu(0, NULL);
+}
+
+void InitMenuMagic()
+{
+    int magicCount = 0;
+
+    for (int i = 0; i < MAGIC_MAX; i++)
+    {
+        if (commandMagic[i].Magic.level > 0)
+        {
+            menuMagic.arr = (Command *)realloc(menuMagic.arr, (magicCount + 1) * sizeof(Command));
+            menuMagic.arr[magicCount] = commandMagic[i];
+            magicCount++;
+        }
+    }
+
+    menuMagic.count = magicCount;
 }
 
 char *GetCommandName(Command *cmd)
@@ -226,8 +244,6 @@ void DrawCommandMenu(CommandMenu *mnu, int indent)
     // Commands:
     for (i = count - 1; i > -1; i--)
     {
-        if (arr[i].type == MAGIC && arr[i].Magic.level == 0) continue;
-
         int commandSource = (cursor == i) ? 1 : ((i == count - 1) ? 3 : 2);
         int cursorOffset = (cursor == i) ? 6 : 0;
 
@@ -241,9 +257,9 @@ void DrawCommandMenu(CommandMenu *mnu, int indent)
 
     // Icon:
     Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu == &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
-    int iconSource = 14 * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
+    int iconSource = ICON_WIDTH * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
 
-    DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, 14, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
+    DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, ICON_WIDTH, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
 }
 
 void DrawGaugePlayer(void)
