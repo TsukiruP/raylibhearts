@@ -8,6 +8,7 @@
 #define COMMAND_HEIGHT 16
 #define COMMAND_MARGIN 12
 #define COMMAND_BOTTOM 218
+#define COMMAND_INDENT 10
 #define NAME_MAX 16
 
 #define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
@@ -71,7 +72,7 @@ Command SetCommandBase(char name[]);
 CommandMenu SetCommandMenu(int count, Command mnu[]);
 void InitCommands();
 char *GetCommandName(Command *cmd);
-void DrawCommandMenu(CommandMenu *mnu);
+void DrawCommandMenu(CommandMenu *mnu, int indent);
 void DrawGaugePlayer(void);
 
 int main(void)
@@ -112,6 +113,7 @@ int main(void)
     
     // Command initialization:
     InitCommands();
+    CommandMenu *menuSub = &menuMagic;
     
     // Target FPS:
     SetTargetFPS(60);
@@ -134,7 +136,8 @@ int main(void)
             // Draw:
             BeginDrawing();
                 ClearBackground(VIOLET);
-                DrawCommandMenu(&menuBase);
+                DrawCommandMenu(&menuBase, 0);
+                if (menuSub != NULL) DrawCommandMenu(menuSub, 1);
                 DrawGaugePlayer();
             EndDrawing();
     }
@@ -157,7 +160,7 @@ Command SetCommandMagic(char name[], char namera[], char namega[])
     Command commandTemp;
 
     commandTemp.type = MAGIC;
-    commandTemp.Magic.level = 0;
+    commandTemp.Magic.level = 3;
     strcpy(commandTemp.name, name);
     strcpy(commandTemp.Magic.namera, namera);
     strcpy(commandTemp.Magic.namega, namega);
@@ -183,30 +186,42 @@ void InitCommands()
     menuBase = SetCommandMenu(4, commandBase);
 
     commandMagic[0] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[1] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[2] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[3] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[4] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[5] = SetCommandMagic("Fire", "Fira", "Firaga");
-    commandMagic[6] = SetCommandMagic("Fire", "Fira", "Firaga");
+    commandMagic[1] = SetCommandMagic("Blizzard", "Blizzara", "Blizzaga");
+    commandMagic[2] = SetCommandMagic("Thunder", "Thundara", "Thundaga");
+    commandMagic[3] = SetCommandMagic("Cure", "Cura", "Curaga");
+    commandMagic[4] = SetCommandMagic("Aero", "Aerora", "Aeroga");
+    commandMagic[5] = SetCommandMagic("Gravity", "Gravira", "Graviga");
+    commandMagic[6] = SetCommandMagic("Stop", "Stopra", "Stopga");
     menuMagic = SetCommandMenu(7, commandMagic);
 }
 
 char *GetCommandName(Command *cmd)
 {
+    if (cmd->type == MAGIC)
+    {
+        switch (cmd->Magic.level)
+        {
+            case 2:
+                return cmd->Magic.namera;
+
+            case 3:
+                return cmd->Magic.namega;
+        }
+    }
+
     return cmd->name;
 }
 
-void DrawCommandMenu(CommandMenu *mnu)
+void DrawCommandMenu(CommandMenu *mnu, int indent)
 {
     int i;
     int cursor = mnu->cursor;
     int count = mnu->count;
-    int indent = 0;
-
     Command *arr = mnu->arr;
-    Vector2 commandPosition = { COMMAND_MARGIN + indent, COMMAND_BOTTOM};
+    Vector2 commandPosition = { COMMAND_MARGIN + COMMAND_INDENT * indent, COMMAND_BOTTOM};
     Texture2D tex = texCommandBase1;
+
+    if (mnu == &menuMagic) tex = texCommandMagic;
 
     // Commands:
     for (i = count - 1; i > -1; i--)
@@ -217,7 +232,7 @@ void DrawCommandMenu(CommandMenu *mnu)
         int cursorOffset = (cursor == i) ? 6 : 0;
 
         DrawTextureRec(tex, (Rectangle){ 0, COMMAND_HEIGHT * commandSource, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x + cursorOffset, commandPosition.y }, WHITE);
-        FONT_1(GetCommandName(&arr[i]), commandPosition.x + 10 + cursorOffset, commandPosition.y + 4, WHITE);
+        FONT_1(GetCommandName(&arr[i]), commandPosition.x + COMMAND_INDENT + cursorOffset, commandPosition.y + 4, WHITE);
         commandPosition.y -= COMMAND_HEIGHT;
     }
 
@@ -225,7 +240,7 @@ void DrawCommandMenu(CommandMenu *mnu)
     DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x, commandPosition.y }, WHITE);
 
     // Icon:
-    Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu = &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
+    Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu == &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
     int iconSource = 14 * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
 
     DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, 14, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
