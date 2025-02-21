@@ -10,12 +10,18 @@
 #define COMMAND_MARGIN 12
 #define COMMAND_BOTTOM 218
 #define COMMAND_INDENT 10
-#define ICON_WIDTH 14
+#define COMMAND_BASE_MAX 4
+#define COMMAND_MAGIC_MAX 7
+#define COMMAND_ICON_WIDTH 14
 #define NAME_MAX 16
-#define BASIC_MAX 4
-#define MAGIC_MAX 7
+#define HEALTH_POINTS_MAX 20
+#define MAGIC_POINTS_MAX 100
 
 #define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
+#define FONT_2(text, x, y, color) DrawTextEx(font2, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
+
+int healthPoints;
+int magicPoints;
 
 Texture2D texCommandBase1;
 Texture2D texCommandBase2;
@@ -29,6 +35,7 @@ Texture2D texBarMP;
 Texture2D texGaugeSora;
 
 Font font1;
+Font font2;
 
 typedef struct Command
 {
@@ -47,6 +54,7 @@ typedef struct Command
         struct Base
         {
             bool unlock;
+            void (*action)();
         } Base;
 
         struct Magic
@@ -67,15 +75,17 @@ typedef struct CommandMenu
     Command *arr;
 } CommandMenu;
 
-Command commandBase[BASIC_MAX];
-Command commandMagic[MAGIC_MAX];
+Command commandBase[COMMAND_BASE_MAX];
+Command commandMagic[COMMAND_MAGIC_MAX];
 CommandMenu menuBase;
 CommandMenu menuMagic;
+CommandMenu *menuSub;
 
-Command SetCommandBase(char name[]);
+Command SetCommandBase(char name[], void (*action)());
 CommandMenu SetCommandMenu(int count, Command mnu[]);
 void InitCommands();
 void InitMenuMagic();
+bool CheckCommand(Command *cmd);
 char *GetCommandName(Command *cmd);
 void DrawCommandMenu(CommandMenu *mnu, int indent);
 void DrawGaugePlayer(void);
@@ -89,37 +99,28 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Command Menu");
     SearchAndSetResourceDir("resources");
     
-    // Image initialization:
-    Image imCommandBase1 = LoadImage("command/CommandBase1.png");
-    Image imCommandBase2 = LoadImage("command/CommandBase2.png");
-    Image imCommandBase3 = LoadImage("command/CommandBase3.png");
-    Image imCommandMagic = LoadImage("command/CommandMagic.png");
-    Image imCommandIcon = LoadImage("command/CommandIcon.png");
-    Image imGaugeHP = LoadImage("gauge/GaugeHP.png");
-    Image imBarHP = LoadImage("gauge/BarHP.png");
-    Image imGaugeMP = LoadImage("gauge/GaugeMP.png");
-    Image imBarMP = LoadImage("gauge/BarMP.png");
-    Image imGaugeSora = LoadImage("gauge/GaugeSora.png");
-    
     // Texture initialization:
-    texCommandBase1 = LoadTextureFromImage(imCommandBase1);
-    texCommandBase2 = LoadTextureFromImage(imCommandBase2);
-    texCommandBase3 = LoadTextureFromImage(imCommandBase3);
-    texCommandMagic = LoadTextureFromImage(imCommandMagic);
-    texCommandIcon = LoadTextureFromImage(imCommandIcon);
-    texGaugeHP = LoadTextureFromImage(imGaugeHP);
-    texBarHP = LoadTextureFromImage(imBarHP);
-    texGaugeMP = LoadTextureFromImage(imGaugeMP);
-    texBarMP = LoadTextureFromImage(imBarMP);
-    texGaugeSora = LoadTextureFromImage(imGaugeSora);
+    texCommandBase1 = LoadTexture("command/CommandBase1.png");
+    texCommandBase2 = LoadTexture("command/CommandBase2.png");
+    texCommandBase3 = LoadTexture("command/CommandBase3.png");
+    texCommandMagic = LoadTexture("command/CommandMagic.png");
+    texCommandIcon = LoadTexture("command/CommandIcon.png");
+    texGaugeHP = LoadTexture("gauge/GaugeHP.png");
+    texBarHP = LoadTexture("gauge/BarHP.png");
+    texGaugeMP = LoadTexture("gauge/GaugeMP.png");
+    texBarMP = LoadTexture("gauge/BarMP.png");
+    texGaugeSora = LoadTexture("gauge/GaugeSora.png");
     
     // Font initialization:
     font1 = LoadFont("font/Font1.png");
+    font2 = LoadFont("font/Font2.png");
     
     // Command initialization:
     InitCommands();
     InitMenuMagic();
-    CommandMenu *menuSub = &menuMagic;
+    healthPoints = 10;
+    magicPoints = 25;
+    menuSub = NULL;
     
     // Target FPS:
     SetTargetFPS(60);
@@ -127,10 +128,25 @@ int main(void)
     // Game loop:
     while (!WindowShouldClose())
     {
-            if (IsKeyPressed(KEY_DOWN)) menuBase.cursor += 1;
-            if (IsKeyPressed(KEY_UP)) menuBase.cursor -= 1;
+            CommandMenu *commandMenuPointer;
 
-            menuBase.cursor = Wrap(menuBase.cursor, 0, 4);
+            if (menuSub == NULL) commandMenuPointer = &menuBase;
+            else commandMenuPointer = menuSub;
+
+            if (IsKeyPressed(KEY_DOWN)) commandMenuPointer->cursor += 1;
+            if (IsKeyPressed(KEY_UP)) commandMenuPointer->cursor -= 1;
+
+            commandMenuPointer->cursor = Wrap(commandMenuPointer->cursor, 0, commandMenuPointer->count);
+            if (IsKeyPressed(KEY_ENTER)) CheckCommand(&commandMenuPointer->arr[commandMenuPointer->cursor]);
+
+            if (menuSub != NULL && IsKeyPressed(KEY_BACKSPACE))
+            {
+                free(menuSub->arr);
+                menuBase.cursor = 0;
+                menuSub->cursor = 0;
+                menuSub->arr = NULL;
+                menuSub = NULL;
+            }
 
             // Draw:
             BeginDrawing();
@@ -140,16 +156,30 @@ int main(void)
                 DrawGaugePlayer();
             EndDrawing();
     }
-    
+
+    UnloadTexture(texCommandBase1);
+    UnloadTexture(texCommandBase2);
+    UnloadTexture(texCommandBase3);
+    UnloadTexture(texCommandMagic);
+    UnloadTexture(texCommandIcon);
+    UnloadTexture(texGaugeHP);
+    UnloadTexture(texBarHP);
+    UnloadTexture(texGaugeMP);
+    UnloadTexture(texBarMP);
+    UnloadTexture(texGaugeSora);
+    UnloadFont(font1);
+    UnloadFont(font2);
     CloseWindow();
     return 0;
 }
 
-Command SetCommandBase(char name[])
+Command SetCommandBase(char name[], void (*action)())
 {
     Command commandTemp;
 
     commandTemp.type = BASE;
+    commandTemp.Base.unlock = true;
+    commandTemp.Base.action = action;
     strcpy(commandTemp.name, name);
     return commandTemp;
 }
@@ -179,28 +209,33 @@ CommandMenu SetCommandMenu(int count, Command mnu[])
 
 void InitCommands()
 {
-    commandBase[0] = SetCommandBase("Attack");
-    commandBase[1] = SetCommandBase("Magic");
-    commandBase[2] = SetCommandBase("Items");
-    commandBase[3] = SetCommandBase("Limit");
-    menuBase = SetCommandMenu(BASIC_MAX, commandBase);
+    commandBase[0] = SetCommandBase("Attack", NULL);
+    commandBase[1] = SetCommandBase("Magic", &InitMenuMagic);
+    commandBase[2] = SetCommandBase("Items", NULL);
+    commandBase[3] = SetCommandBase("Limit", NULL);
+    menuBase = SetCommandMenu(COMMAND_BASE_MAX, commandBase);
 
-    commandMagic[0] = SetCommandMagic("Fire", "Fira", "Firaga", 12);
-    commandMagic[1] = SetCommandMagic("Blizzard", "Blizzara", "Blizzaga", 15);
-    commandMagic[2] = SetCommandMagic("Thunder", "Thundara", "Thundaga", 18);
+    commandMagic[0] = SetCommandMagic("Fire", "Fira", "Firaga", 10);
+    commandMagic[1] = SetCommandMagic("Blizzard", "Blizzara", "Blizzaga", 12);
+    commandMagic[2] = SetCommandMagic("Thunder", "Thundara", "Thundaga", 14);
     commandMagic[3] = SetCommandMagic("Cure", "Cura", "Curaga", -1);
     commandMagic[4] = SetCommandMagic("Aero", "Aerora", "Aeroga", 13);
     commandMagic[5] = SetCommandMagic("Gravity", "Gravira", "Graviga", 15);
     commandMagic[6] = SetCommandMagic("Stop", "Stopra", "Stopga", 20);
-    commandMagic[1].Magic.level = 1;
     menuMagic = SetCommandMenu(0, NULL);
+
+    commandMagic[0].Magic.level = 3;
+    commandMagic[1].Magic.level = 1;
+    commandMagic[2].Magic.level = 1;
+    commandMagic[3].Magic.level = 2;
+    commandMagic[5].Magic.level = 1;
 }
 
 void InitMenuMagic()
 {
     int magicCount = 0;
 
-    for (int i = 0; i < MAGIC_MAX; i++)
+    for (int i = 0; i < COMMAND_MAGIC_MAX; i++)
     {
         if (commandMagic[i].Magic.level > 0)
         {
@@ -210,7 +245,27 @@ void InitMenuMagic()
         }
     }
 
-    menuMagic.count = magicCount;
+    if (magicCount)
+    {
+        menuMagic.count = magicCount;
+        menuSub = &menuMagic;
+    }
+}
+
+bool CheckCommand(Command *cmd)
+{
+    switch (cmd->type)
+    {
+        case BASE:
+            if (cmd->Base.unlock && cmd->Base.action != NULL)
+            {
+                cmd->Base.action();
+            }
+            break;
+
+        case MAGIC:
+            break;
+    }
 }
 
 char *GetCommandName(Command *cmd)
@@ -257,21 +312,23 @@ void DrawCommandMenu(CommandMenu *mnu, int indent)
 
     // Icon:
     Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu == &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
-    int iconSource = ICON_WIDTH * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
+    int iconSource = COMMAND_ICON_WIDTH * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
 
-    DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, ICON_WIDTH, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
+    DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, COMMAND_ICON_WIDTH, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
 }
 
 void DrawGaugePlayer(void)
 {
     const Vector2 position = { 420 - COMMAND_MARGIN, COMMAND_BOTTOM };
-    const int healthWidth = 62;
+    const int healthWidth = 97 * ((float)healthPoints / HEALTH_POINTS_MAX);
     const int healthHeight = 5;
-    const int magicWidth = 75;
+    const int magicWidth = 50 * ((float)magicPoints / MAGIC_POINTS_MAX);
+
+    DrawTexture(texGaugeSora, position.x - texGaugeSora.width - 2, position.y - texGaugeSora.height, WHITE);
 
     DrawTexture(texGaugeHP, position.x - texGaugeHP.width, position.y, WHITE);
     DrawTexturePro(texBarHP, (Rectangle){ 0, 0, 1, texBarHP.height }, (Rectangle){ position.x - 15, position.y + 1, healthWidth, healthHeight }, (Vector2){ healthWidth, 0 }, 0, WHITE);
-    DrawTexture(texGaugeSora, position.x - texGaugeSora.width - 2, position.y - texGaugeSora.height, WHITE);
-    DrawTexture(texGaugeMP, position.x - texGaugeMP.width - 47, position.y - texGaugeMP.height - 1, WHITE);
-    DrawTexturePro(texBarMP, (Rectangle){ 0, 0, 1, texBarMP.height }, (Rectangle){ position.x - 63, position.y - texGaugeHP.height, magicWidth, healthHeight }, (Vector2){ magicWidth, 0 }, 0, WHITE);
+
+    DrawTextureRec(texGaugeMP, (Rectangle){ 0, 0, 67, texGaugeMP.height }, (Vector2){ position.x - 114, position.y - texGaugeMP.height - 1 }, WHITE);
+    DrawTexturePro(texBarMP, (Rectangle){ 0, 0, 1, texBarMP.height }, (Rectangle){ position.x - 62, position.y - texGaugeHP.height, magicWidth, healthHeight }, (Vector2){ magicWidth, 0 }, 0, WHITE);
 }
