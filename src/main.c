@@ -17,25 +17,8 @@
 #define HEALTH_POINTS_MAX 20
 #define MAGIC_POINTS_MAX 100
 
-#define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
-#define FONT_2(text, x, y, color) DrawTextEx(font2, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
-
-int healthPoints;
-int magicPoints;
-
-Texture2D texCommandBase1;
-Texture2D texCommandBase2;
-Texture2D texCommandBase3;
-Texture2D texCommandMagic;
-Texture2D texCommandIcon;
-Texture2D texGaugeHP;
-Texture2D texBarHP;
-Texture2D texGaugeMP;
-Texture2D texBarMP;
-Texture2D texGaugeSora;
-
-Font font1;
-Font font2;
+//#define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
+//#define FONT_2(text, x, y, color) DrawTextEx(font2, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
 
 typedef struct Command
 {
@@ -80,6 +63,23 @@ Command commandMagic[COMMAND_MAGIC_MAX];
 CommandMenu menuBase;
 CommandMenu menuMagic;
 CommandMenu *menuSub;
+int healthPoints;
+int magicPoints;
+
+Texture2D texCommandBase1;
+Texture2D texCommandBase2;
+Texture2D texCommandBase3;
+Texture2D texCommandMagic;
+Texture2D texCommandIcon;
+Texture2D texGaugeHP;
+Texture2D texBarHP;
+Texture2D texGaugeMP;
+Texture2D texBarMP;
+Texture2D texGaugeSora;
+
+Font fontWhite;
+Font fontGray;
+Font fontYellow;
 
 Command SetCommandBase(char name[], void (*action)());
 CommandMenu SetCommandMenu(int count, Command mnu[]);
@@ -112,14 +112,15 @@ int main(void)
     texGaugeSora = LoadTexture("gauge/GaugeSora.png");
     
     // Font initialization:
-    font1 = LoadFont("font/Font1.png");
-    font2 = LoadFont("font/Font2.png");
+    fontWhite = LoadFont("font/FontWhite.png");
+    fontGray = LoadFont("font/FontGray.png");
+    fontYellow = LoadFont("font/FontYellow.png");
     
     // Command initialization:
     InitCommands();
     InitMenuMagic();
-    healthPoints = 10;
-    magicPoints = 25;
+    healthPoints = HEALTH_POINTS_MAX;
+    magicPoints = MAGIC_POINTS_MAX;
     menuSub = NULL;
     
     // Target FPS:
@@ -138,6 +139,8 @@ int main(void)
 
             commandMenuPointer->cursor = Wrap(commandMenuPointer->cursor, 0, commandMenuPointer->count);
             if (IsKeyPressed(KEY_ENTER)) CheckCommand(&commandMenuPointer->arr[commandMenuPointer->cursor]);
+
+            if (IsKeyPressed(KEY_ONE)) magicPoints = (magicPoints == 10)? MAGIC_POINTS_MAX : 10;
 
             if (menuSub != NULL && IsKeyPressed(KEY_BACKSPACE))
             {
@@ -167,8 +170,9 @@ int main(void)
     UnloadTexture(texGaugeMP);
     UnloadTexture(texBarMP);
     UnloadTexture(texGaugeSora);
-    UnloadFont(font1);
-    UnloadFont(font2);
+    UnloadFont(fontWhite);
+    UnloadFont(fontGray);
+    UnloadFont(fontYellow);
     CloseWindow();
     return 0;
 }
@@ -299,11 +303,20 @@ void DrawCommandMenu(CommandMenu *mnu, int indent)
     // Commands:
     for (i = count - 1; i > -1; i--)
     {
-        int commandSource = (cursor == i) ? 1 : ((i == count - 1) ? 3 : 2);
-        int cursorOffset = (cursor == i) ? 6 : 0;
+        Command *commandPointer = &arr[i];
+        int commandSource = (cursor == i)? 1 : ((i == count - 1)? 3 : 2);
+        Font *commandFont = &fontWhite;
+        int cursorOffset = (cursor == i)? 6 : 0;
+
+        switch (commandPointer->type)
+        {
+            case MAGIC:
+                if (commandPointer->Magic.cost == -1 || commandPointer->Magic.cost >= magicPoints) commandFont = &fontYellow;
+                break;
+        }
 
         DrawTextureRec(tex, (Rectangle){ 0, COMMAND_HEIGHT * commandSource, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x + cursorOffset, commandPosition.y }, WHITE);
-        FONT_1(GetCommandName(&arr[i]), commandPosition.x + COMMAND_INDENT + cursorOffset, commandPosition.y + 4, WHITE);
+        DrawTextEx(*commandFont, GetCommandName(commandPointer), (Vector2){ commandPosition.x + COMMAND_INDENT + cursorOffset, commandPosition.y + 4 }, (float)commandFont->baseSize, -2, WHITE);
         commandPosition.y -= COMMAND_HEIGHT;
     }
 
@@ -311,8 +324,8 @@ void DrawCommandMenu(CommandMenu *mnu, int indent)
     DrawTextureRec(tex, (Rectangle){ 0, 0, tex.width, COMMAND_HEIGHT }, (Vector2){ commandPosition.x, commandPosition.y }, WHITE);
 
     // Icon:
-    Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu == &menuBase) ? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
-    int iconSource = COMMAND_ICON_WIDTH * ((arr[cursor].type == BASE) ? cursor : arr[cursor].type);
+    Vector2 iconPosition = { commandPosition.x + tex.width - 11 - ((mnu == &menuBase)? 12 : 0), commandPosition.y + COMMAND_HEIGHT + 1 };
+    int iconSource = COMMAND_ICON_WIDTH * ((arr[cursor].type == BASE)? cursor : arr[cursor].type);
 
     DrawTextureRec(texCommandIcon, (Rectangle){ iconSource, 0, COMMAND_ICON_WIDTH, texCommandIcon.height }, (Vector2){ iconPosition.x, iconPosition.y + 16 * cursor }, WHITE);
 }
