@@ -17,9 +17,6 @@
 #define HEALTH_POINTS_MAX 20
 #define MAGIC_POINTS_MAX 100
 
-//#define FONT_1(text, x, y, color) DrawTextEx(font1, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
-//#define FONT_2(text, x, y, color) DrawTextEx(font2, text, (Vector2){ x, y }, (float)font1.baseSize, -2, color)
-
 typedef struct Command
 {
     enum
