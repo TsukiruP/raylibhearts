@@ -1,6 +1,12 @@
 # Raylib-Hearts
 A shortlived attempt at recreating the Command Menu from Kingdom Hearts. Abandoned due to focusing on other projects. Made using [Raylib-Quickstart](https://github.com/raylib-extras/raylib-quickstart ).
 
+## Controls
+* Up/Down - Pick Menu
+* Enter - Confirm
+* Backspace - Back
+* 1 - MP Charge
+
 ## Supported Platforms
 Quickstart supports the main 3 desktop platforms:
 * Windows
