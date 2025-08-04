@@ -6,6 +6,9 @@
 #include "raymath.h"
 #include "resource_dir.h"
 
+#define COMMAND_TEX(i) ("hud/command/" i)
+#define GAUGE_TEX(i) ("hud/gauge/" i)
+
 #define COMMAND_HEIGHT 16
 #define COMMAND_MARGIN 12
 #define COMMAND_BOTTOM 218
@@ -97,16 +100,16 @@ int main(void)
     SearchAndSetResourceDir("resources");
     
     // Texture initialization:
-    texCommandBase1 = LoadTexture("command/CommandBase1.png");
-    texCommandBase2 = LoadTexture("command/CommandBase2.png");
-    texCommandBase3 = LoadTexture("command/CommandBase3.png");
-    texCommandMagic = LoadTexture("command/CommandMagic.png");
-    texCommandIcon = LoadTexture("command/CommandIcon.png");
-    texGaugeHP = LoadTexture("gauge/GaugeHP.png");
-    texBarHP = LoadTexture("gauge/BarHP.png");
-    texGaugeMP = LoadTexture("gauge/GaugeMP.png");
-    texBarMP = LoadTexture("gauge/BarMP.png");
-    texGaugeSora = LoadTexture("gauge/GaugeSora.png");
+    texCommandBase1 = LoadTexture(COMMAND_TEX("CommandBase1.png"));
+    texCommandBase2 = LoadTexture(COMMAND_TEX("CommandBase2.png"));
+    texCommandBase3 = LoadTexture(COMMAND_TEX("CommandBase3.png"));
+    texCommandMagic = LoadTexture(COMMAND_TEX("CommandMagic.png"));
+    texCommandIcon = LoadTexture(COMMAND_TEX("CommandIcon.png"));
+    texGaugeHP = LoadTexture(GAUGE_TEX("GaugeHP.png"));
+    texBarHP = LoadTexture(GAUGE_TEX("BarHP.png"));
+    texGaugeMP = LoadTexture(GAUGE_TEX("GaugeMP.png"));
+    texBarMP = LoadTexture(GAUGE_TEX("BarMP.png"));
+    texGaugeSora = LoadTexture(GAUGE_TEX("GaugeSora.png"));
     
     // Font initialization:
     fontWhite = LoadFont("font/FontWhite.png");
