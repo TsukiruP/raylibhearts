@@ -3,7 +3,7 @@
   <img src="https://github.com/user-attachments/assets/661e1ab2-f785-4728-9aa6-cd62ddf9a098"/>
 </p>
 
-A shortlived attempt at recreating the Command Menu from Kingdom Hearts. Abandoned due to focusing on other projects. Made using [Raylib-Quickstart](https://github.com/raylib-extras/raylib-quickstart ).
+A shortlived attempt at recreating the Command Menu from Kingdom Hearts. Abandoned due to focusing on other projects. Made using [Raylib-Quickstart](https://github.com/raylib-extras/raylib-quickstart ) with sprites by [FieryExplosion](https://www.spriters-resource.com/submitter/FieryExplosion/).
 
 ## Controls
 * Up/Down - Pick Menu
